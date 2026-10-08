@@ -1,0 +1,51 @@
+{
+  "name": "vintasend-liquidjs",
+  "version": "1.0.0-alpha5",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vintasoftware/vintasend-liquidjs.git"
+  },
+  "description": "LiquidJS email and SMS template renderers for VintaSend",
+  "keywords": [
+    "vintasend",
+    "liquid",
+    "liquidjs",
+    "email",
+    "sms",
+    "templates",
+    "notifications"
+  ],
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "prepare": "husky",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "compile-liquid-templates": "dist/scripts/compile-liquid-templates.js"
+  },
+  "author": "Hugo Bessa",
+  "license": "MIT",
+  "dependencies": {
+    "liquidjs": "^10.29.0",
+    "vintasend": "^1.0.0-alpha5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.10",
+    "@types/node": "25.3.3",
+    "@vitest/coverage-v8": "4.0.18",
+    "husky": "^9.1.7",
+    "typescript": "^5.9.3",
+    "vitest": "4.0.18"
+  }
+}
