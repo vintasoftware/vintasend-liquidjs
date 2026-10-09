@@ -1,6 +1,6 @@
 {
   "name": "vintasend-liquidjs",
-  "version": "1.0.0-alpha6",
+  "version": "1.0.0-alpha7",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vintasoftware/vintasend-liquidjs.git"
@@ -38,7 +38,7 @@
   "license": "MIT",
   "dependencies": {
     "liquidjs": "^10.29.0",
-    "vintasend": "^1.0.0-alpha6"
+    "vintasend": "^1.0.0-alpha7"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.10",
