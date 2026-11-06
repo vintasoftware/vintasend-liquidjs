@@ -147,6 +147,16 @@ describe('LiquidSmsTemplateRenderer', () => {
       expect(result).toEqual({ subject: '', body: 'Code 1234 & more' });
     });
 
+    it('should ignore a preheader, which has no place in plain text', async () => {
+      const result = await renderer.renderFromTemplateContent(
+        mockNotification,
+        { subject: null, body: 'Body', preheader: 'Peek' } as never,
+        {},
+      );
+
+      expect(result.body).toBe('Body');
+    });
+
     it('should render the subject content when one is given', async () => {
       const result = await renderer.renderFromTemplateContent(
         mockNotification,
