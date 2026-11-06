@@ -87,6 +87,45 @@ describe('LiquidInlineEmailTemplateRenderer', () => {
     });
   });
 
+  it('should inject a rendered, escaped preheader as a hidden element at the top of the body', async () => {
+    const result = await renderer.renderFromTemplateContent(
+      mockNotification,
+      { subject: 'Hi', body: '<p>Body</p>', preheader: 'See {{ name }}' } as never,
+      { name: '<John>' },
+    );
+
+    expect(result.body).toMatch(
+      /^<div style="display:none;[^"]*">See &lt;John&gt;<\/div><p>Body<\/p>$/,
+    );
+  });
+
+  it('should place the preheader right after <body> in a full document', async () => {
+    const result = await renderer.renderFromTemplateContent(
+      mockNotification,
+      {
+        subject: 'Hi',
+        body: '<html><body class="x"><p>Body</p></body></html>',
+        preheader: 'Peek',
+      } as never,
+      {},
+    );
+
+    expect(result.body).toMatch(
+      /^<html><body class="x"><div style="[^"]*">Peek<\/div><p>Body<\/p>/,
+    );
+  });
+
+  it('should leave the body alone when the preheader is null or blank', async () => {
+    for (const preheader of [null, '', '  ']) {
+      const result = await renderer.renderFromTemplateContent(
+        mockNotification,
+        { subject: 'Hi', body: '<p>Body</p>', preheader } as never,
+        {},
+      );
+      expect(result.body).toBe('<p>Body</p>');
+    }
+  });
+
   it('should throw when the body template key is not in the map', async () => {
     await expect(
       renderer.render({ ...mockNotification, bodyTemplate: 'non-existent-body' }, {}),

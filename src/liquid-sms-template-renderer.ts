@@ -24,6 +24,7 @@ export class LiquidSmsTemplateRenderer<
   protected override readonly rendererName: string = 'LiquidSmsTemplateRenderer';
   protected override readonly templateKind: string = 'SMS';
   protected override readonly subjectRequired: boolean = false;
+  protected override readonly preheaderSupported: boolean = false;
 
   constructor(options: LiquidTemplateRendererOptions = {}) {
     super({ outputEscape: undefined, ...options });

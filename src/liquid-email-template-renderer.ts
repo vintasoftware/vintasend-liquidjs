@@ -10,7 +10,7 @@ import type {
 } from 'vintasend';
 import { log, logError, logId, logLabel } from 'vintasend';
 
-type TemplatePart = 'body' | 'subject';
+type TemplatePart = 'body' | 'subject' | 'preheader';
 
 export type LiquidTemplateRendererOptions = LiquidOptions & {
   /**
@@ -30,7 +30,10 @@ export type LiquidTemplateRendererOptions = LiquidOptions & {
  *
  * The body is rendered with `outputEscape: 'escape'` unless `options.outputEscape` says otherwise,
  * so context values cannot inject markup into an HTML email; use `{{ value | raw }}` for values
- * that are trusted HTML. The subject is plain text and is never escaped; its whitespace, including
+ * that are trusted HTML. When template content carries a `preheader` (as managed templates do),
+ * it is rendered with the body's escaping and injected as a hidden element at the top of the body,
+ * which is what mail clients show as inbox preview text. The file-based `render` has no preheader.
+ * The subject is plain text and is never escaped; its whitespace, including
  * the trailing newline of a template file, is collapsed to single spaces.
  */
 export class LiquidEmailTemplateRenderer<Config extends BaseNotificationTypeConfig>
@@ -41,6 +44,8 @@ export class LiquidEmailTemplateRenderer<Config extends BaseNotificationTypeConf
   /** What this renderer produces, for log lines. */
   protected readonly templateKind: string = 'email';
   protected readonly subjectRequired: boolean = true;
+  /** Whether a preheader in template content is injected into the body. Off for plain text. */
+  protected readonly preheaderSupported: boolean = true;
   private readonly bodyEngine: Liquid;
   private readonly subjectEngine: Liquid;
 
@@ -94,6 +99,7 @@ export class LiquidEmailTemplateRenderer<Config extends BaseNotificationTypeConf
     context: JsonObject,
   ): Promise<EmailTemplate> {
     const { subject: subjectContent, body: bodyContent } = templateContent;
+    const preheaderContent = (templateContent as { preheader?: string | null }).preheader;
     if (!subjectContent && this.subjectRequired) {
       throw new Error('Subject template is required');
     }
@@ -110,8 +116,17 @@ export class LiquidEmailTemplateRenderer<Config extends BaseNotificationTypeConf
           this.subjectEngine.parseAndRender(subjectContent, context),
         )
       : '';
+    const preheader =
+      this.preheaderSupported && preheaderContent?.trim()
+        ? await this.renderPart('preheader', null, notification, () =>
+            this.bodyEngine.parseAndRender(preheaderContent, context),
+          )
+        : '';
 
-    return { subject: normalizeSubject(subject), body: this.normalizeBody(body) };
+    return {
+      subject: normalizeSubject(subject),
+      body: this.normalizeBody(injectPreheader(body, preheader)),
+    };
   }
 
   protected normalizeBody(body: string): string {
@@ -147,6 +162,27 @@ export class LiquidEmailTemplateRenderer<Config extends BaseNotificationTypeConf
       throw error;
     }
   }
+}
+
+const PREHEADER_STYLE =
+  'display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;visibility:hidden;';
+
+/**
+ * Put `preheader` (already escaped by the engine) in a hidden element at the top of the body, or
+ * straight after the opening `<body>` tag when the body is a full document. No-op when blank.
+ */
+function injectPreheader(body: string, preheader: string): string {
+  const text = preheader.replace(/\s+/g, ' ').trim();
+  if (!text) {
+    return body;
+  }
+  const element = `<div style="${PREHEADER_STYLE}">${text}</div>`;
+  const bodyTag = /<body\b[^>]*>/i.exec(body);
+  if (bodyTag === null) {
+    return element + body;
+  }
+  const end = bodyTag.index + bodyTag[0].length;
+  return body.slice(0, end) + element + body.slice(end);
 }
 
 function normalizeSubject(subject: string): string {
